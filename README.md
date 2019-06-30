@@ -7,13 +7,13 @@
 
 
 
-## 实战 SSH 端口转发
+## 一、实战 SSH 端口转发
 from BM Developer
 
 https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 
 
-## 动态端口转发：安装带有 SSH 的 SOCKS 服务器
+## 二、动态端口转发：安装带有 SSH 的 SOCKS 服务器
 
 当我们谈论使用 SSH 进行动态端口转发时，我们说的是将 SSH 服务器转换为 SOCKS 服务器。那么什么是 SOCKS 服务器？
 
@@ -48,7 +48,7 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 链接：https://www.imooc.com/article/43700
 
 
-## SSH的三种端口转发
+## 三、SSH的三种端口转发
 
 最近工作中经常需要ssh登录到某台跳板机，再连接受限网络环境中的某台服务器。以前经常用SSH端口转发这一功能，但周围的同事好像对这个并不清楚，这里记录一下以备其它同事询问。
 
@@ -88,7 +88,11 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 
 远程转发通过参数 -R 指定，格式：-R [登录主机:]登录主机端口:本地网络主机:本地网络主机端口。
 
-举例：ssh -R 0.0.0.0:8080:host2:80 user@host1。这条命令将host2的80端口映射到待登录主机host1的8080端口，前提是本地主机可以正常连接host2的80端口。
+举例：
+
+> ssh -R 0.0.0.0:8080:host2:80 user@host1
+
+这条命令将host2的80端口映射到待登录主机host1的8080端口，前提是本地主机可以正常连接host2的80端口。
 
 **畅想一下这个功能的作用：**
 
@@ -142,11 +146,190 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
     ssh -o ProxyCommand='/usr/local/bin/corkscrew http_proxy_host http_proxy_port %h %p' user@host2
 ```
 
-总结
+**总结**
 
 都是些小技巧，不过掌握了作用还是挺大的，可以大大提高生产力的。
 
 https://jeremyxu2010.github.io/2018/12/ssh的三种端口转发/
+
+
+## 四、SSH隧道：内网穿透实战
+
+### SSH支持的端口转发模式
+
+正文开始前先用5分钟过一遍ssh支持的端口转发模式，具体使用场景在下一节详述。太长不看的可直接跳到下一节。
+
+#### 1.”动态“端口转发（SOCKS代理）：
+
+> ssh -D 1080 JumpHost  # D is for Dynamic
+
+区别于下面要讲的其他端口转发模式，-D是建立在TCP/IP应用层的动态端口转发。这条命令相当于监听本地1080端口作为SOCKS5代理服务器，所有到该端口的请求都会被代理（转发）到JumpHost，就好像请求是从JumpHost发出一样。由于是标准代理协议，只要是支持SOCKS代理的程序，都能从中受益，访问原先本机无法访问而JumpHost可以访问的网络资源，不限协议（HTTP/SSH/FTP, TCP/UDP），不限端口。
+
+#### 2.本地端口转发
+
+```shell
+  ssh -L 2222:localhost:22 JumpHost  # L is for Local
+```
+
+这条命令的作用是，绑定本机2222端口，当有到2222端口的连接时，该连接会经由安全通道(secure channel)转发到JumpHost，由JumpHost建立一个到localhost（也就是JumpHost自己） 22端口的连接。
+
+如果上述命令执行成功，新开一个终端，执行```ssh -p 2222 localhost```，登录的其实是JumpHost。
+
+所以-L是一个建立在传输层的，端口到端口的转发模式，当然远程主机不仅限于localhost。
+
+后面的stdio转发和ProxyJump可以看做是本地端口转发的升级版和便利版（参见OpenSSH netcat mode）
+
+#### 3.远程端口转发
+
+```shell
+ssh -R 8080:localhost:80 JumpHost  # R is for Remote
+```
+
+顾名思义，远程转发就是在ssh连接成功后，绑定目标主机的指定端口，并转发到本地网络的某主机和端口：和本地转发相比，转发的方向正好反过来。
+假如在本机80端口有一个HTTP服务器，上述命令执行成功后，JumpHost的用户就可以通过请求http://localhost:8080来访问本机的HTTP服务了。
+
+**stdio转发（netcat模式）与ProxyJump**
+
+```shell
+ssh -W localhost:23 JumpHost
+```
+
+netcat模式可谓ssh的杀手特性：通过-W参数开启到目标网络某主机和端口的stdio转发，可以看做是组合了netcat(nc)和ssh -L。上述命令相当于将本机的标准输入输出连接到了JumpHost的telnet端口上，就像在JumpHost上执行telnet localhost一样，而且并不需要在本机运行telnet！
+
+既然是直接转发stdio，用来做ssh跳板再方便不过（可以看做不用执行两遍ssh命令就直接跳到了目标主机），所以在ProxyJump面世前（OpenSSH 7.3），ssh -W常被用于构建主机到主机的透明隧道代理，而ProxyJump其实就是基于stdio转发做的简化，专门用于链式的SSH跳板。
+
+### 使用场景
+
+#### 建立代理
+
+假设你在局域网A，HostB在局域网B，JumpHost有双网卡可以同时连接到局域网A和B。此时的你想要访问HostB上的web服务，便可以通过如下命令建立代理：
+
+> ssh -D '[::]:1080' JumpHost
+
+这样，浏览器设置代理socks5://localhost:1080后，就可以直接访问http://HostB了。
+
+当然，还可以通过这个代理ssh登录到HostB:
+
+ssh -oProxyCommand="nc -X 5 -x localhost:1080 %h %p" HostB
+其中, nc需要BSD版（Ubuntu和OS X默认就是BSD版本），-X 5指定代理协议为SOCKS5，-x指定了代理地址，%h %p用于ProxyCommand中指代代理目的地（HostB）和目的端口。更多代理用法参见lainme姐的通过代理连接SSH和通过代理使用GIT。
+
+ssh -D也是最基本的翻墙手段之一。
+
+通过公网主机穿透两个内网
+
+好，现在进入一种更复杂的情况：你（HostA）和目标主机（HostB）分属不同的内网，从外界都无法直接连通。不过好在这两个内网都可以访问公网（JumpHost），你考虑通过一台公网机器建立两个内网之间的隧道。
+
+于是在目标网络，你吩咐现场人员帮你连通公网主机：
+
+# Host in LAN-B
+ssh -qTfNn -R 2222:localhost:22 JumpHost
+-qTfNn用于告知ssh连接成功后就转到后台运行，具体含义见下一节解释。
+
+现在，你只需要同样登录到跳板机JumpHost，就可以通过2222端口登录HostB了：
+
+# in JumpHost, login HostB
+ssh -p 2222 localhost
+更进一步
+
+如果我们将2222绑定为公网端口，甚至都不用登录跳板机，从而直接穿透到HostB：
+
+ssh -qTfNn -R '[::]:2222:localhost:22' JumpHost
+（因为要绑定公网端口，请确保在JumpHost的/etc/ssh/sshd_config里，配置了GatewayPorts yes，否则SSH Server只能绑定回环地址端口。）
+
+在HostA上执行:
+
+ssh -p 2222 JumpHost # Login to HostB
+这样还有一个好处，作为管理员可以直接禁用跳板机的shell权限，使他作为纯粹的隧道主机存在（见“安全性”一节）。
+
+当然还有粗暴的方式，通过组合ssh -D和ssh -R打开Socks5代理：
+
+# Host in LAN-B
+ssh -qTfNn -D :1080 localhost  &&  \
+ssh -qTfNn -R '[::]:12345:localhost:1080' JumpHost
+上述命令在HostB创建了SOCKS代理，并且映射到了公网JumpHost的12345端口，整个内网对我们而言已经一览无余，ssh登录更是手到擒来：
+
+# Host in LAN-A
+ssh -oProxyCommand="nc -X 5 -x JumpHost:12345 %h %p" localhost
+限制访问
+
+然而，直接在公网主机上暴露穿透到内网的端口非常不安全。为提高安全性，我们把远程转发限制到回环地址， 这样就限制了只有有权限登录JumpHost的人才能穿透到局域网B。首先在HostB上设定远程转发：
+
+# Host in LAN-B
+ssh -qTfNn -R 2222:localhost:22 JumpHost
+在HostA执行：
+
+# Host in LAN-A
+# 通过ProxyJump跳板登录到目标主机，即使跳板机用户不能分配tty也没关系
+ssh -J JumpHost -p 2222 localhost
+（如果要限制socks5代理的使用，道理也一样，不过是加一层由本机端口到跳板机socks5端口的本地转发而已）
+
+如果OpenSSH版本<7.3, 需要用stdio转发(ssh -W)代替-J，该命令会先登录JumpHost，继而转发本机stdio到JumpHost，所以接下来的ssh登录操作如同是在JumpHost完成一样：
+
+ssh -oProxyCommand="ssh -W %h:%p JumpHost" -p 2222 localhost
+通常意义的”跳板“
+
+通常意义的”跳板“，指的是连接发起端A，经由跳板机B->C->D，连接到目标主机E的过程。连接和数据流都是单向的，比起上述情况反而简单了许多。这里不再赘述，只举两个简单的例子说明。更多示例参见OpenSSH/Cookbook/Proxies and Jump Hosts
+
+ssh -L 1080:localhost:9999 JumpHost -t ssh -D 9999 HostB
+这条命令会在登录JumpHost时，建立本机1080端口到JumpHost 9999端口的转发，同时在JumpHost上执行ssh登录HostB，同时监听9999端口动态转发到HostB。于是，所有到本机1080端口的连接，都被代理到了远程的HostB上去。
+
+ssh -J user1@Host1:22,user2@Host2:2222 user3@Host3
+这条命令就是经由Host1, Host2，ssh登录到Host3的过程（需ssh版本高于7.3）。
+
+Tips
+
+ssh执行为后台任务
+
+ssh -qTfNn用于建立纯端口转发用途的ssh连接，参数具体含义如下：
+
+-q: quiet模式，忽视大部分的警告和诊断信息（比如端口转发时的各种连接错误）
+-T: 禁用tty分配(pseudo-terminal allocation)
+-f: 登录成功后即转为后台任务执行
+-N: 不执行远程命令（专门做端口转发）
+-n: 重定向stdin为/dev/null，用于配合-f后台任务
+安全性
+
+建议为端口转发建立专门的账户，使用随机密码（当然使用私钥登录更好），并且禁掉其执行命令的权限。最简单的方式为
+
+# add user tunnel-user for ssh port forwarding
+sudo useradd -m tunnel-user
+# generate 10 random passwords with 16 length
+pwgen -sy1 16 10
+# pick one password and set it to tunnel-user
+sudo passwd tunnel-user
+# disable shell for tunnel-user
+sudo chsh -s /bin/false tunnel-user
+更多可参考Ask Ubuntu
+
+避免在公网直接暴露动态代理转发，很危险。 尽量远程端口转发到目标主机的ssh端口。这样需要远程接入的人可以自行ssh登录或打开本地Socks代理。
+
+保持连接
+
+客户端设置（~/.ssh/config）：
+
+Host *
+     ServerAliveInterval 180
+每180秒向SSH Server发送心跳包，默认累积三次超时即认为失去连接。
+
+服务器端同样可以设置心跳（/etc/ssh/sshd_config），作用同理：
+
+ClientAliveInterval 180
+Windows 客户端
+
+(我是个不喜欢贴图的人。。）以PuTTY为例，假如这台Windows主机在内网，我们要借助公网主机的远程端口转发建立隧道：
+
+和往常一样，在Session菜单输入公网主机的IP和SSH端口
+在SSH菜单里勾选Don't start a shell or command at all，以建立一个纯隧道连接（不需要登录shell）
+展开SSH菜单，进入Tunnels子菜单：
+勾选Remote ports do the same (SSH-2 only)，使远程端口监听公网连接。
+输入具体端口配置，比如Source port（也就是远程主机要监听的端口）填写22222，Destination填写HostIP:22，其中HostIP为内网中SSH服务器的IP。
+选择Remote, Auto，表示建立远程端口转发。点击Add添加配置
+点击Open登录公网主机即可建立隧道。
+
+
+
+https://cherrot.com/tech/2017/01/08/ssh-tunneling-practice.html
+
 
 
 
