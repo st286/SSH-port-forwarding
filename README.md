@@ -160,8 +160,9 @@ https://jeremyxu2010.github.io/2018/12/ssh的三种端口转发/
 正文开始前先用5分钟过一遍ssh支持的端口转发模式，具体使用场景在下一节详述。太长不看的可直接跳到下一节。
 
 #### 1.”动态“端口转发（SOCKS代理）：
-
-> ssh -D 1080 JumpHost  # D is for Dynamic
+```shell
+ ssh -D 1080 JumpHost  # D is for Dynamic
+```
 
 区别于下面要讲的其他端口转发模式，-D是建立在TCP/IP应用层的动态端口转发。这条命令相当于监听本地1080端口作为SOCKS5代理服务器，所有到该端口的请求都会被代理（转发）到JumpHost，就好像请求是从JumpHost发出一样。由于是标准代理协议，只要是支持SOCKS代理的程序，都能从中受益，访问原先本机无法访问而JumpHost可以访问的网络资源，不限协议（HTTP/SSH/FTP, TCP/UDP），不限端口。
 
@@ -203,17 +204,19 @@ netcat模式可谓ssh的杀手特性：通过-W参数开启到目标网络某主
 #### 建立代理
 
 假设你在局域网A，HostB在局域网B，JumpHost有双网卡可以同时连接到局域网A和B。此时的你想要访问HostB上的web服务，便可以通过如下命令建立代理：
-
-> ssh -D '[::]:1080' JumpHost
+```shell
+ ssh -D '[::]:1080' JumpHost
+```
 
 这样，浏览器设置代理socks5://localhost:1080后，就可以直接访问http://HostB了。
 
 当然，还可以通过这个代理ssh登录到HostB:
-
+```shell
 ssh -oProxyCommand="nc -X 5 -x localhost:1080 %h %p" HostB
-其中, nc需要BSD版（Ubuntu和OS X默认就是BSD版本），-X 5指定代理协议为SOCKS5，-x指定了代理地址，%h %p用于ProxyCommand中指代代理目的地（HostB）和目的端口。更多代理用法参见lainme姐的通过代理连接SSH和通过代理使用GIT。
+```
+其中, nc需要BSD版（Ubuntu和OS X默认就是BSD版本），``-X 5``指定代理协议为SOCKS5，``-x``指定了代理地址，``%h %p``用于ProxyCommand中指代代理目的地（HostB）和目的端口。更多代理用法参见lainme姐的通过代理连接SSH和通过代理使用GIT。
 
-ssh -D也是最基本的翻墙手段之一。
+**ssh -D也是最基本的翻墙手段之一**
 
 通过公网主机穿透两个内网
 
