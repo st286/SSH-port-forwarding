@@ -5,9 +5,9 @@
 ## Contents
 
 * [1. 实战 SSH 端口转发](#一实战-ssh-端口转发)
-* [2. 动态端口转发：安装带有 SSH 的 SOCKS 服务器](https://github.com/st286/SSH-port-forwarding/blob/master/README.md#二动态端口转发安装带有-ssh-的-socks-服务器)
-* [3. SSH的三种端口转发](https://github.com/st286/SSH-port-forwarding/blob/master/README.md#三SSH的三种端口转发)
-* [4. SSH隧道：内网穿透实战](https://github.com/st286/SSH-port-forwarding/blob/master/README.md#四SSH隧道内网穿透实战)
+* [2. 动态端口转发：安装带有 SSH 的 SOCKS 服务器](#二动态端口转发安装带有-ssh-的-socks-服务器)
+* [3. SSH的三种端口转发](#三SSH的三种端口转发)
+* [4. SSH隧道：内网穿透实战](#四SSH隧道内网穿透实战)
 
 ---
 
