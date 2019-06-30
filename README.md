@@ -13,7 +13,7 @@
 
 ## 一、实战 SSH 端口转发
 from BM Developer
-
+**原文**
 https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 
 
@@ -49,7 +49,8 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 
 选项 -f 会使 ssh 停留在后台并将其与当前 shell 分离，以便使该进程成为守护进程。如果没有选项 -N（或不指定命令），则不起作用，否则交互式 shell 将与后台进程不兼容。
 
-链接：https://www.imooc.com/article/43700
+**原文**
+https://www.imooc.com/article/43700
 
 
 ## 三、SSH的三种端口转发
@@ -150,10 +151,8 @@ ssh -D 50000 user@host1。这条命令创建了一个SOCKS代理，所以通过�
     ssh -o ProxyCommand='/usr/local/bin/corkscrew http_proxy_host http_proxy_port %h %p' user@host2
 ```
 
-**总结**
 
-都是些小技巧，不过掌握了作用还是挺大的，可以大大提高生产力的。
-
+**原文**
 https://jeremyxu2010.github.io/2018/12/ssh的三种端口转发/
 
 
@@ -340,17 +339,19 @@ Host *
 
 #### Windows 客户端
 
-(我是个不喜欢贴图的人。。）以PuTTY为例，假如这台Windows主机在内网，我们要借助公网主机的远程端口转发建立隧道：
+以PuTTY为例，假如这台Windows主机在内网，我们要借助公网主机的远程端口转发建立隧道：
 
 1. 和往常一样，在Session菜单输入公网主机的IP和SSH端口
 2. 在SSH菜单里勾选Don't start a shell or command at all，以建立一个纯隧道连接（不需要登录shell）
 3. 展开SSH菜单，进入Tunnels子菜单：
     1. 勾选Remote ports do the same (SSH-2 only)，使远程端口监听公网连接。
     2. 输入具体端口配置，比如Source port（也就是远程主机要监听的端口）填写22222，Destination填写HostIP:22，其中HostIP为内网中SSH服务器的IP。
-    3. 选择Remote, Auto，表示建立远程端口转发。点击Add添加配置
+    3. 选择Remote, Auto，表示建立远程端口转发。
+    4. 点击Add添加配置
 
 点击Open登录公网主机即可建立隧道。
 
+**原文**
 https://cherrot.com/tech/2017/01/08/ssh-tunneling-practice.html
 
 
