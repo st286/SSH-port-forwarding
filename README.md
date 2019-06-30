@@ -24,19 +24,19 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 例如，假设我们希望在一个没有直接连接到互联网的内部网上通过 Thunderbird 使用 POP3 、 ICMP 和 SMTP 的邮件服务。如果我们只有一个 web 代理可以用，我们可以使用的唯一的简单方式是使用某个 webmail（也可以使用 Thunderbird 的 Webmail 扩展）。我们还可以通过 HTTP 隧道)来起到代理的用途。但最简单的方式是在网络中设置一个 SOCKS 服务器，它可以让我们使用 POP3、ICMP 和 SMTP，而不会造成任何的不便。
 
 虽然有很多软件可以配置非常专业的 SOCKS 服务器，但用 OpenSSH 设置一个只需要简单的一条命令：
-
-> Clientessh $ ssh -D 1080 user@servidorssh
-
+```shell
+ Clientessh $ ssh -D 1080 user@servidorssh
+```
 或者我们可以改进一下：
-
-> Clientessh $ ssh -fN -D 0.0.0.0:1080 user@servidorssh
-
+```shell
+ Clientessh $ ssh -fN -D 0.0.0.0:1080 user@servidorssh
+```
 其中：
 
 选项 -D 类似于选项为 -L 和 -R 的静态端口转发。像那些一样，我们可以让客户端只监听本地请求或从其他节点到达的请求，具体取决于我们将请求关联到哪个地址：
-
-> -D [bind_address:] port
-
+```shell
+ -D [bind_address:] port
+```
 在静态端口转发中可以看到，我们使用选项 -R 进行反向端口转发，而动态转发是不可能的。我们只能在 SSH 客户端创建 SOCKS 服务器，而不能在 SSH 服务器端创建。
 
 1080 是 SOCKS 服务器的典型端口，正如 8080 是 Web 代理服务器的典型端口一样。
@@ -71,9 +71,9 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 本地转发通过参数 -L 指定，格式：-L [本地主机:]本地主机端口:远程网络主机:远程网络主机端口。加上ssh待登录主机，这里就有了三台主机。
 
 举例：
-
-> ssh -L 0.0.0.0:50000:host2:80 user@host1
-
+```shell
+ ssh -L 0.0.0.0:50000:host2:80 user@host1
+```
 这条命令将host2的80端口映射到本地的50000端口，前提是待登录主机host1上可以正常连接到host2的80端口。
 
 **畅想一下这个功能的作用：**
@@ -89,9 +89,9 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 远程转发通过参数 -R 指定，格式：-R [登录主机:]登录主机端口:本地网络主机:本地网络主机端口。
 
 举例：
-
-> ssh -R 0.0.0.0:8080:host2:80 user@host1
-
+```shell
+ ssh -R 0.0.0.0:8080:host2:80 user@host1
+```
 这条命令将host2的80端口映射到待登录主机host1的8080端口，前提是本地主机可以正常连接host2的80端口。
 
 **畅想一下这个功能的作用：**
@@ -111,9 +111,9 @@ https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
 动态转发通过参数 -D 指定，格式：-D [本地主机:]本地主机端口。相对于前两个来说，动态转发无需再指定远程主机及其端口。它们由通过 SOCKS协议 连接到本地主机端口的那个主机。
 
 举例：
-
-> ssh -D 50000 user@host1。这条命令创建了一个SOCKS代理，所以通过该SOCKS代理发出的数据包将经过host1转发出去。
-
+```shell
+ssh -D 50000 user@host1。这条命令创建了一个SOCKS代理，所以通过该SOCKS代理发出的数据包将经过host1转发出去。
+```
 怎么使用？
 
 * 用firefox浏览器，在浏览器里设置使用socks5代理127.0.0.1:50000，然后浏览器就可以访问host1所在网络内的任何IP了。
@@ -237,13 +237,15 @@ ssh -p 2222 localhost
 **更进一步**
 
 如果我们将2222绑定为公网端口，甚至都不用登录跳板机，从而直接穿透到HostB：
-
-``ssh -qTfNn -R '[::]:2222:localhost:22' JumpHost``
+```shell
+ssh -qTfNn -R '[::]:2222:localhost:22' JumpHost
+```
 （因为要绑定公网端口，请确保在JumpHost的/etc/ssh/sshd_config里，配置了GatewayPorts yes，否则SSH Server只能绑定回环地址端口。）
 
 在HostA上执行:
-
-``ssh -p 2222 JumpHost # Login to HostB``
+```shell
+ssh -p 2222 JumpHost # Login to HostB
+```
 这样还有一个好处，作为管理员可以直接禁用跳板机的shell权限，使他作为纯粹的隧道主机存在（见“安全性”一节）。
 
 当然还有粗暴的方式，通过组合ssh -D和ssh -R打开Socks5代理：
@@ -281,8 +283,9 @@ ssh -oProxyCommand="ssh -W %h:%p JumpHost" -p 2222 localhost
 ### 通常意义的”跳板“
 
 通常意义的”跳板“，指的是连接发起端A，经由跳板机B->C->D，连接到目标主机E的过程。连接和数据流都是单向的，比起上述情况反而简单了许多。这里不再赘述，只举两个简单的例子说明。更多示例参见OpenSSH/Cookbook/Proxies and Jump Hosts
-
+```shell
 ssh -L 1080:localhost:9999 JumpHost -t ssh -D 9999 HostB
+```
 这条命令会在登录JumpHost时，建立本机1080端口到JumpHost 9999端口的转发，同时在JumpHost上执行ssh登录HostB，同时监听9999端口动态转发到HostB。于是，所有到本机1080端口的连接，都被代理到了远程的HostB上去。
 ```shell
 ssh -J user1@Host1:22,user2@Host2:2222 user3@Host3
