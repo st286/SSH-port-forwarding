@@ -1,9 +1,9 @@
 # [SSH Academy](https://www.ssh.com/academy/ssh)
 
 Setup socks5 tunel.
-
+```
    ssh -NT -D 1080 usr@host
-
+```
 ---
 # SSH端口转发
 
