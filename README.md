@@ -13,8 +13,7 @@
 
 ## 一、实战 SSH 端口转发
 from BM Developer
-**原文**
-https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html
+[原文](https://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/index.html)
 
 
 ## 二、动态端口转发：安装带有 SSH 的 SOCKS 服务器
