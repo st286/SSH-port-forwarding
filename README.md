@@ -1,3 +1,7 @@
+## [Using ssh tunnel as socks5 proxy](https://www.metahackers.pro/ssh-tunnel-as-socks5-proxy/)
+
+
+---
 # [SSH Academy](https://www.ssh.com/academy/ssh)
 
 Setup socks5 tunel.
